@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word & Character Counter</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --text-color: #333;
+            --primary-color: #007bff;
+            --primary-hover-color: #0056b3;
+            --secondary-color: #6c757d;
+            --secondary-hover-color: #545b62;
+            --border-color: #ced4da;
+            --metric-bg-color: #ffffff;
+            --metric-border-color: #e9ecef;
+            --progress-bg: #e9ecef;
+            --progress-green: #28a745;
+            --progress-orange: #fd7e14;
+            --progress-red: #dc3545;
+            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #212529;
+                --text-color: #e9ecef;
+                --primary-color: #0d6efd;
+                --primary-hover-color: #0b5ed7;
+                --secondary-color: #adb5bd;
+                --secondary-hover-color: #868e96;
+                --border-color: #495057;
+                --metric-bg-color: #343a40;
+                --metric-border-color: #495057;
+                --progress-bg: #495057;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--metric-bg-color);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--primary-color);
+        }
+
+        #textInput {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1rem;
+            resize: vertical;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        #textInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .controls button, .controls select {
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            border: 1px solid var(--primary-color);
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .controls button:hover, .controls select:hover {
+            background-color: var(--primary-hover-color);
+            border-color: var(--primary-hover-color);
+        }
+        
+        .controls button.secondary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        .controls button.secondary:hover {
+            background-color: var(--secondary-hover-color);
+            border-color: var(--secondary-hover-color);
+        }
+
+        .controls select {
+            background-color: var(--bg-color); /* Match textarea for select */
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+         .controls select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: var(--progress-bg);
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--progress-green);
+            border-radius: 5px;
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+
+        .results-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-box {
+            background-color: var(--bg-color);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid var(--metric-border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .metric-box .label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+
+        .metric-box .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        
+        #charCountToggleContainer {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            justify-content: center; /* Center the label and count within the box */
+        }
+
+        #charCountToggleContainer .label {
+             margin-bottom: 0; /* Reset margin for inline elements */
+        }
+
+        #toggleCharSpace { /* The toggle button itself */
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            margin-left: 8px; /* Space it out from the count */
+        }
+
+
+        #warningMessage {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            #warningMessage {
+                background-color: #3E3817; /* Darker yellow */
+                color: #FFD33D;      /* Lighter yellow text */
+                border-color: #5A4C1B;  /* Darker border */
+            }
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        footer p {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Word & Character Counter</h1>
+
+        <textarea id="textInput" placeholder="Type or paste your text here..." aria-label="Text input area"></textarea>
+
+        <div class="controls">
+            <button id="clearText" class="secondary" aria-label="Clear all text from input area">Clear Text</button>
+            <button id="copyText" class="secondary" aria-label="Copy text from input area to clipboard">Copy Text</button>
+            <select id="readingSpeed" aria-label="Select reading speed in words per minute">
+                <option value="180">Slow (180 WPM)</option>
+                <option value="200" selected>Average (200 WPM)</option>
+                <option value="250">Fast (250 WPM)</option>
+                <option value="300">Very Fast (300 WPM)</option>
+            </select>
+            <button id="exportTxt" class="secondary" aria-label="Export results as TXT file">Export TXT</button>
+            <button id="exportCsv" class="secondary" aria-label="Export results as CSV file">Export CSV</button>
+        </div>
+
+        <div class="progress-bar-container">
+            <div id="progressBar"></div>
+        </div>
+        <div id="warningMessage" style="display:none;" role="alert"></div>
+
+        <div class="results-panel">
+            <div class="metric-box">
+                <span class="label">Words</span>
+                <span id="wordCount" class="value">0</span>
+            </div>
+            <div class="metric-box">
+                <div id="charCountToggleContainer">
+                    <span class="label" id="toggledCharCountLabel">Characters (with spaces)</span>
+                    <button id="toggleCharSpace" aria-pressed="true" title="Toggle character count between including or excluding spaces">Toggle Spaces</button>
+                </div>
+                <span id="toggledCharCountValue" class="value">0</span>
+            </div>
+            <div class="metric-box">
+                <span class="label">Characters (with spaces)</span>
+                <span id="charCountWithSpaces" class="value">0</span>
+            </div>
+            <div class="metric-box">
+                <span class="label">Characters (no spaces)</span>
+                <span id="charCountNoSpaces" class="value">0</span>
+            </div>
+            <div class="metric-box">
+                <span class="label">Sentences</span>
+                <span id="sentenceCount" class="value">0</span>
+            </div>
+            <div class="metric-box">
+                <span class="label">Paragraphs</span>
+                <span id="paragraphCount" class="value">0</span>
+            </div>
+            <div class="metric-box">
+                <span class="label">Reading Time</span>
+                <span id="readingTime" class="value">0 sec</span>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Instructions:</strong> Type or paste your text into the box above. Counts update in real-time.</p>
+        <p><strong>Note:</strong> For performance reasons, very long texts (e.g., over 50,000 characters) might show a warning. The progress bar indicates text length relative to approx. 10,000 characters.</p>
+        <p><em>Deployment: This app can be deployed to static hosting services like GitHub Pages or Netlify. Simply upload this HTML file. For a professional domain, configure DNS settings with your hosting provider and domain registrar.</em></p>
+    </footer>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const clearTextButton = document.getElementById('clearText');
+        const copyTextButton = document.getElementById('copyText');
+        const readingSpeedSelect = document.getElementById('readingSpeed');
+        const exportTxtButton = document.getElementById('exportTxt');
+        const exportCsvButton = document.getElementById('exportCsv');
+
+        const wordCountEl = document.getElementById('wordCount');
+        
+        const toggledCharCountLabelEl = document.getElementById('toggledCharCountLabel');
+        const toggledCharCountValueEl = document.getElementById('toggledCharCountValue');
+        const toggleCharSpaceButton = document.getElementById('toggleCharSpace');
+        
+        const charCountWithSpacesEl = document.getElementById('charCountWithSpaces');
+        const charCountNoSpacesEl = document.getElementById('charCountNoSpaces');
+        const sentenceCountEl = document.getElementById('sentenceCount');
+        const paragraphCountEl = document.getElementById('paragraphCount');
+        const readingTimeEl = document.getElementById('readingTime');
+        const progressBar = document.getElementById('progressBar');
+        const warningMessageEl = document.getElementById('warningMessage');
+
+        const MAX_TEXT_LENGTH_WARNING = 50000; // Characters for warning
+        const PROGRESS_BAR_MAX_CHARS = 10000; // Characters for 100% progress bar
+
+        let countSpacesInToggled = true; // State for the toggled character count
+
+        function updateCounts() {
+            const text = textInput.value;
+            const textLength = text.length;
+
+            // 1. Word Count
+            const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(word => word.length > 0).length;
+            wordCountEl.textContent = words;
+
+            // 2. Character Counts
+            const charsWithSpaces = textLength;
+            const charsNoSpaces = text.replace(/\s/g, '').length;
+            
+            charCountWithSpacesEl.textContent = charsWithSpaces;
+            charCountNoSpacesEl.textContent = charsNoSpaces;
+
+            // Update toggled character count
+            if (countSpacesInToggled) {
+                toggledCharCountLabelEl.textContent = 'Characters (with spaces)';
+                toggledCharCountValueEl.textContent = charsWithSpaces;
+            } else {
+                toggledCharCountLabelEl.textContent = 'Characters (no spaces)';
+                toggledCharCountValueEl.textContent = charsNoSpaces;
+            }
+            toggleCharSpaceButton.setAttribute('aria-pressed', countSpacesInToggled.toString());
+
+
+            // 3. Sentence Count (basic)
+            // Matches '.', '!', '?' possibly followed by spaces, but not if they are part of a sequence like '...'
+            // and ensures there's actual text in the sentence.
+            const sentences = text.trim() === '' ? 0 : text.match(/[^.!?]+[.!?]+(\s+|$)/g)?.length || (text.trim().length > 0 ? 1 : 0);
+            sentenceCountEl.textContent = sentences;
+
+            // 4. Paragraph Count
+            const paragraphs = text.trim() === '' ? 0 : text.split(/\n+/).filter(p => p.trim().length > 0).length;
+            paragraphCountEl.textContent = paragraphs;
+
+            // 5. Reading Time
+            const wpm = parseInt(readingSpeedSelect.value, 10);
+            let readingTimeText = "0 sec";
+            if (words > 0) {
+                const minutesExact = words / wpm;
+                const totalSeconds = Math.round(minutesExact * 60);
+                if (totalSeconds < 1 && words > 0) { // very short text, still takes a bit
+                    readingTimeText = "< 1 sec";
+                } else if (totalSeconds < 60) {
+                    readingTimeText = `${totalSeconds} sec`;
+                } else {
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    readingTimeText = `${minutes} min ${seconds > 0 ? `${seconds} sec` : ''}`.trim();
+                }
+            }
+            readingTimeEl.textContent = readingTimeText;
+
+            // 6. Progress Bar
+            const progressPercent = Math.min(100, (textLength / PROGRESS_BAR_MAX_CHARS) * 100);
+            progressBar.style.width = `${progressPercent}%`;
+            if (progressPercent < 33) {
+                progressBar.style.backgroundColor = 'var(--progress-green)';
+            } else if (progressPercent < 66) {
+                progressBar.style.backgroundColor = 'var(--progress-orange)';
+            } else {
+                progressBar.style.backgroundColor = 'var(--progress-red)';
+            }
+
+            // 7. Warning for long text
+            if (textLength > MAX_TEXT_LENGTH_WARNING) {
+                warningMessageEl.textContent = `Warning: Text is very long (${textLength} chars). Performance might be affected.`;
+                warningMessageEl.style.display = 'block';
+            } else {
+                warningMessageEl.style.display = 'none';
+            }
+        }
+
+        textInput.addEventListener('input', updateCounts);
+        readingSpeedSelect.addEventListener('change', updateCounts);
+
+        toggleCharSpaceButton.addEventListener('click', () => {
+            countSpacesInToggled = !countSpacesInToggled;
+            if (countSpacesInToggled) {
+                toggleCharSpaceButton.textContent = 'Exclude Spaces';
+                toggleCharSpaceButton.title = 'Currently including spaces. Click to exclude.';
+            } else {
+                toggleCharSpaceButton.textContent = 'Include Spaces';
+                toggleCharSpaceButton.title = 'Currently excluding spaces. Click to include.';
+            }
+            updateCounts(); // Refresh counts based on new toggle state
+        });
+        // Initial text for toggle button
+        toggleCharSpaceButton.textContent = 'Exclude Spaces';
+        toggleCharSpaceButton.title = 'Currently including spaces. Click to exclude.';
+
+
+        clearTextButton.addEventListener('click', () => {
+            textInput.value = '';
+            textInput.focus();
+            updateCounts();
+        });
+
+        copyTextButton.addEventListener('click', () => {
+            if (textInput.value === '') return;
+            navigator.clipboard.writeText(textInput.value)
+                .then(() => {
+                    const originalText = copyTextButton.textContent;
+                    copyTextButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyTextButton.textContent = originalText;
+                    }, 1500);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy text. Your browser might not support this feature or it was blocked.');
+                });
+        });
+
+        function downloadFile(filename, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        exportTxtButton.addEventListener('click', () => {
+            const text = textInput.value;
+            if (text.trim() === '') {
+                alert('Nothing to export. Please enter some text.');
+                return;
+            }
+            const stats = `
+Word & Character Counter Stats
+---------------------------------
+Text Analyzed:
+${text.substring(0, 200)}${text.length > 200 ? '...' : ''}
+---------------------------------
+Words: ${wordCountEl.textContent}
+Characters (with spaces): ${charCountWithSpacesEl.textContent}
+Characters (no spaces): ${charCountNoSpacesEl.textContent}
+Sentences: ${sentenceCountEl.textContent}
+Paragraphs: ${paragraphCountEl.textContent}
+Estimated Reading Time (${readingSpeedSelect.options[readingSpeedSelect.selectedIndex].text}): ${readingTimeEl.textContent}
+            `;
+            downloadFile('text_stats.txt', stats.trim(), 'text/plain;charset=utf-8');
+        });
+
+        exportCsvButton.addEventListener('click', () => {
+            const text = textInput.value;
+            if (text.trim() === '') {
+                alert('Nothing to export. Please enter some text.');
+                return;
+            }
+            const headers = "Metric,Value,Reading Speed Setting";
+            const dataRows = [
+                `Words,${wordCountEl.textContent},N/A`,
+                `Characters (with spaces),${charCountWithSpacesEl.textContent},N/A`,
+                `Characters (no spaces),${charCountNoSpacesEl.textContent},N/A`,
+                `Sentences,${sentenceCountEl.textContent},N/A`,
+                `Paragraphs,${paragraphCountEl.textContent},N/A`,
+                `Estimated Reading Time,${readingTimeEl.textContent.replace(' min ', 'm ').replace(' sec', 's')},${readingSpeedSelect.options[readingSpeedSelect.selectedIndex].text}`
+            ];
+            const csvContent = headers + '\n' + dataRows.join('\n');
+            downloadFile('text_stats.csv', csvContent, 'text/csv;charset=utf-f-8');
+        });
+
+        // Initial calculation on page load
+        updateCounts();
+    </script>
+</body>
+</html>
